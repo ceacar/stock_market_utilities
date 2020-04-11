@@ -326,6 +326,10 @@ class AlphaVantageTickerIntraPriceRetriever:
             time.sleep(60)
 
 def secure_ticker_prices():
+    # we don't do it in weekend
+    if self.is_weekend():
+        return
+
     global TICKERS_TO_SAVE
     counter = 0
     for tick in TICKERS_TO_SAVE:
