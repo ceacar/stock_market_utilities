@@ -184,9 +184,7 @@ class AlphaVantageTickerIntraPriceRetriever:
 
         data_path = self.get_file_saved_path()
         excalibur.file_utility.remove_gzip_file_if_empty(data_path)
-
-        with gzip.open(data_path, 'w') as f:
-            f.write(json.dumps(data_json).encode('utf-8'))
+        excalibur.file_utility.write_to_gzip(data_path, [json.dumps(data_json)])
 
     def get_ticker_price(self):
         """
@@ -206,8 +204,7 @@ class AlphaVantageTickerIntraPriceRetriever:
         if not self.cache:
             raise Exception("Cache doesn't have any data")
         data_path = self.get_file_saved_path()
-        with gzip.open(data_path, 'w') as f:
-            f.write(json.dumps(self.cache))
+        excalibur.file_utility.write_to_gzip(data_path, [json.dumps(self.cache)])
 
     def reset_cache(self):
         self.cache = []
