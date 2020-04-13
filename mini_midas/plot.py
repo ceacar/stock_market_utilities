@@ -3,6 +3,7 @@ import matplotlib.animation as animation
 from matplotlib import style
 import mini_midas
 import datetime
+import excalibur
 
 
 style.use('fivethirtyeight')
@@ -10,15 +11,15 @@ style.use('fivethirtyeight')
 
 class Plotter:
     def __init__(self, ticker):
-        self.ticker = self.ticker
+        self.ticker = ticker
         self.fig = plt.figure()
-        self.ax1 = fig.add_subplot(1,1,1)
+        self.ax1 = self.fig.add_subplot(1, 1, 1)
         self.path_finder = mini_midas.stock_utilities.AlphaVantageTickerIntraPriceRetriever(self.ticker)
 
     def get_ticker_file_path(self):
         return self.path_finder.get_file_saved_path()
 
-    def parse_json_data_to_graph_data(self, json_obj:dict) -> (list, list):
+    def parse_json_data_to_graph_data(self, json_obj: dict) -> (list, list):
         """
         {
             "Meta Data": {
@@ -36,25 +37,17 @@ class Plotter:
         """
         time_prices_dict = json_obj["Time Series (1min)"]
         xs_date, ys_price = [], []
-        for k in sorted(time_prices_dict.keys()):
-            xs_date.append(datetime.datetime.strptime("%Y-%m-%d %H:%M:%S"))
-            ys_price.append(time_prices_dict[k]['close'])
-        return xs, ys
-
+        for date_string in sorted(time_prices_dict.keys()):
+            xs_date.append(datetime.datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S"))
+            ys_price.append(time_prices_dict[date_string]['4. close'])
+        return xs_date, ys_price
 
     def animate(self, i):
         data_file_path = self.get_ticker_file_path()
         json_data = excalibur.file_utility.read_gzip_file_as_json_obj(data_file_path)
-        xs,ys = self.parse_json_data_to_graph_data(json_data)
+        xs, ys = self.parse_json_data_to_graph_data(json_data)
 
         # plot the graph
-        xs = []
-        ys = []
-        for line in lines:
-            if len(line) > 1:
-                x, y = line.split(',')
-                xs.append(float(x))
-                ys.append(float(y))
         self.ax1.clear()
         self.ax1.plot(xs, ys)
 

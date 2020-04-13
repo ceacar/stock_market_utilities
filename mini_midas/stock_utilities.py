@@ -3,7 +3,8 @@
 save ticker info
 
 
-    tickers_to_save = ['dal', 'aal', 'ual', 'tsla', 'amzn', 'aapl', 'msft', 'nvda', 'intc', 'googl', 'cost', 'iau', 'gld', 'gm', 'amd']
+tickers_to_save = ['dal', 'aal', 'ual', 'tsla', 'amzn',
+'aapl', 'msft', 'nvda', 'intc', 'googl', 'cost', 'iau', 'gld', 'gm', 'amd']
     counter = 0
     for tick in tickers_to_save:
         alpha = AlphaVantageTickerIntraPriceRetriever(tick)
@@ -16,15 +17,15 @@ save ticker info
 
 import os
 import pathlib
-import excalibur
-import requests
 import datetime
-import gzip
 import json
 import time
+import requests
+import excalibur
+import mini_midas
 
-log = excalibur.logger.getlogger_debug()
-TICKERS_TO_SAVE = ['dal', 'aal', 'ual', 'tsla', 'amzn', 'aapl', 'msft', 'nvda', 'intc', 'googl', 'cost', 'iau', 'gld', 'gm', 'amd']
+
+LOG_INSTANCE = excalibur.logger.getlogger_debug()
 
 
 class AlphaVantageTickerIntraPriceRetriever:
@@ -34,25 +35,13 @@ class AlphaVantageTickerIntraPriceRetriever:
     """
     TOKEN_PATH = os.path.expanduser("~/.config/api_tokens/alphavantage.co.token")
     BASE_URL = "https://www.alphavantage.co/query?function="
-    DATA_STORAGE_PATH = os.path.expanduser("~/storage/music/stock_historical_data")
-
-    def get_today_date(self) -> str:
-        """
-        return today's date in string
-        """
-        return excalibur.time_conversion.get_current_date(date_format="%Y%m%d")
-
-    def split_date_string(self) -> (str, str):
-        dt = datetime.datetime.now()
-        date_str = dt.strftime("%Y%m%d")
-        hour_str = dt.strftime("%H")
-        return date_str, hour_str
+    DATA_STORAGE_PATH = os.path.expanduser("~/data/stock_historical_data")
 
     def init_dirs(self):
         """
         creates directory for today's both intraday and historical data folder
         """
-        today = self.get_today_date()
+        today = excalibur.time_conversion.get_current_date(date_format="%Y%m%d")
 
         self.intraday_data_storage_path = f"{self.DATA_STORAGE_PATH}/intraday/{today}"
         self.historical_data_storage_path = f"{self.DATA_STORAGE_PATH}/historical/{today}"
@@ -73,14 +62,18 @@ class AlphaVantageTickerIntraPriceRetriever:
         if not os.path.exists(self.TOKEN_PATH):
             raise FileNotFoundError(f"Token file at {self.TOKEN_PATH} not found")
 
-        with open(self.TOKEN_PATH, 'r') as f:
-            self.token = f.readline()
+        with open(self.TOKEN_PATH, 'r') as fil:
+            self.token = fil.readline()
 
         if self.token:
-            log.info(f"Loaded market api token {self.token}")
+            LOG_INSTANCE.info(f"Loaded market api token {self.token}")
         return self.token
 
     def get_url(self, function_string):
+        """
+        URL would return base + function string which is the full url of alphaadvantage url
+        https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=MSFT&apikey=demo
+        """
         return self.BASE_URL + function_string
 
     def get_start_price(self):
@@ -105,8 +98,8 @@ class AlphaVantageTickerIntraPriceRetriever:
         """
         function_string = f"TIME_SERIES_INTRADAY&symbol={self.ticker}&interval=1min&apikey={self.token}"
         url = self.BASE_URL + function_string
-        r = requests.get(url)
-        return r.json()
+        req = requests.get(url)
+        return req.json()
 
     def retrieve_start_price(self):
         """
@@ -118,31 +111,16 @@ class AlphaVantageTickerIntraPriceRetriever:
         if excalibur.file_utility.does_gzip_file_exist_and_not_empty(file_path):
             ticker_data = excalibur.file_utility.read_gzip_file_as_json_obj(file_path)
             return ticker_data
-        else:
-            ticker_data = self.get_start_price()
-            self.save_start_price_to_file(ticker_data)
-            return ticker_data
 
-    def is_dt_after_market(self, dt_str):
-        dt_obj = datetime.datetime.strptime(dt_str, '%Y-%m-%d %H:%M:%s')
-        return dt_obj.hour >= 16
-
-    def is_market_closed(self):
-        dt_obj = datetime.datetime.now()
-        return dt_obj.hour >= 16
-
-    def is_market_open(self):
-        dt_obj = datetime.datetime.now()
-        return dt_obj.hour >= 9 and dt_obj.minute >= 30
-
-    def is_weekend(self):
-        dt_obj = datetime.datetime.now()
-        if dt_obj.isoweekday() > 5:
-            return True
-        return False
+        ticker_data = self.get_start_price()
+        self.save_start_price_to_file(ticker_data)
+        return ticker_data
 
     def is_market_holiday(self):
-        #TODO: need to implement this
+        """
+        1
+        """
+        # TODO: need to implement this
         return False
 
     # def extract_info_out_of_ticker_data(self, data_json):
@@ -152,9 +130,9 @@ class AlphaVantageTickerIntraPriceRetriever:
     #     return ticker_name, last_price_datetime, date_str, hour
 
     def get_file_saved_path(self):
-        date_str, hour = self.split_date_string()
+        date_str, hour = mini_midas.common.split_date_string()
 
-        if self.is_market_closed():
+        if mini_midas.common.is_market_closed():
             # we need to give a full name and save it to full day path
             save_path = f"{self.historical_data_storage_path}/{self.ticker}.{date_str}.json.gzip"
         else:
@@ -214,10 +192,11 @@ class AlphaVantageTickerIntraPriceRetriever:
         this method is for those runner periodically saves interday prices to keep a record
         """
 
-        if self.is_market_closed and not self.is_market_open:
-            self
+        if mini_midas.common.is_market_closed and not mini_midas.common.is_market_open:
+            # sleeps 1 hr and hope the market is closed and we can get full historical price
+            time.sleep(3600)
 
-        log.info(f"Retrieving {self.ticker} price")
+        LOG_INSTANCE.info(f"Retrieving {self.ticker} price")
         self.reset_cache()
         # curls and save intraday data
         intraday_price_so_far = self.retrieve_start_price()
@@ -262,7 +241,8 @@ class AlphaVantageTickerIntraPriceRetriever:
         """
         try:
             global_quote = ticker_minute_data['Global Quote']
-            symbol = global_quote['01. symbol']
+            # check symbol is the same or not
+            # symbol = global_quote['01. symbol']
             open_price = global_quote['02. open']
             high_price = global_quote['03. high']
             low_price = global_quote['04. low']
@@ -277,7 +257,7 @@ class AlphaVantageTickerIntraPriceRetriever:
             }
 
         except Exception as e:
-            log.critical(f"Invalid Quote Data: {ticker_minute_data}, Error: {str(e)}")
+            LOG_INSTANCE.critical(f"Invalid Quote Data: {ticker_minute_data}, Error: {str(e)}")
 
     def run(self):
         """
@@ -292,7 +272,7 @@ class AlphaVantageTickerIntraPriceRetriever:
         # 5. when market ends, save all these files into one file at another location
         """
 
-        log.info(f"Retrieving {self.ticker} price")
+        LOG_INSTANCE.info(f"Retrieving {self.ticker} price")
         self.reset_cache()
 
         # curls and save intraday data
@@ -303,13 +283,13 @@ class AlphaVantageTickerIntraPriceRetriever:
         # we will stop here for now for saving data
         current_hour = excalibur.time_conversion.get_current_hour()
 
-        import ipdb
-        ipdb.set_trace()
+        # import ipdb
+        # ipdb.set_trace()
 
         while True:
             # if market is closed or is weekend, or is market holidays, we will just keep sleeping
-            if (self.is_market_closed() and not self.is_market_open()) or self.is_weekend() or self.is_market_holiday():
-                log.debug('Market Closed,sleeping....Zzzz...')
+            if (mini_midas.common.is_market_closed() and not mini_midas.common.is_market_open()) or mini_midas.common.is_weekend() or self.is_market_holiday():
+                LOG_INSTANCE.debug('Market Closed,sleeping....Zzzz...')
                 time.sleep(60)
 
             ticker_minute_data = self.get_ticker_price()
@@ -322,14 +302,14 @@ class AlphaVantageTickerIntraPriceRetriever:
             # sleep 1 minute before retry
             time.sleep(60)
 
-def secure_ticker_prices():
+
+def secure_ticker_prices(ticker_list):
     # we don't do it in weekend
-    if self.is_weekend():
+    if mini_midas.common.is_weekend():
         return
 
-    global TICKERS_TO_SAVE
     counter = 0
-    for tick in TICKERS_TO_SAVE:
+    for tick in ticker_list:
         alpha = AlphaVantageTickerIntraPriceRetriever(tick)
         alpha.save_price_only()
         counter += 1
@@ -337,9 +317,7 @@ def secure_ticker_prices():
             time.sleep(61)
 
 
-
 if __name__ == '__main__':
     # secure_ticker_prices()
     alpha = AlphaVantageTickerIntraPriceRetriever("TSLA")
     alpha.run()
-
