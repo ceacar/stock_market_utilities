@@ -76,7 +76,7 @@ def get_file_saved_path(ticker):
         save_path = f"{get_historical_data_storage_path()}/{ticker}.{date_str}.json.gzip"
     else:
         # we save it to intraday
-        save_path = f"{get_intraday_data_storage_path()}/{ticker}.{date_str},{hour}.json.gzip"
+        save_path = f"{get_intraday_data_storage_path()}/{ticker}.{date_str}.{hour}.json.gzip"
 
     return save_path
 
