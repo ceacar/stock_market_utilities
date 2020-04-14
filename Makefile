@@ -25,4 +25,4 @@ ptest:
 	while true;do inotifywait -r -e close_write ${PWD} && { py.test ${PWD}/tests/test_*.py --disable-pytest-warnings -vv; echo "tested"; };sleep 1;done
 
 run:
-	./run_mini_midas.py get_intraday_data AAPL,TSLA,DAVX,IAU | tee /tmp/run_mini_midas.log
+	while true;do ./run_mini_midas.py get_intraday_data AAPL,TSLA,DAVX,IAU | tee /tmp/run_mini_midas_${date +%Y%m%d%H%M%S}.log;done
