@@ -1,3 +1,4 @@
+import multiprocessing
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from matplotlib import style
@@ -5,7 +6,6 @@ from matplotlib import ticker
 import mini_midas
 import datetime
 import excalibur
-# import pandas
 
 
 LOG_INSTANCE = excalibur.logger.getlogger_debug()
@@ -81,55 +81,32 @@ class Plotter:
 
         # plot the graph
         self.ax1.clear()
-        self.ax1.yaxis.set_major_locator(ticker.MultipleLocator(12))
+        self.ax1.yaxis.set_major_locator(ticker.MaxNLocator(nbins='auto'))
+        # self.ax1.yaxis.set_major_locator(ticker.MultipleLocator(6))
         self.ax1.plot(xs, ys)
         # self.ax1.xlabel("时间")
         # self.ax1.ylabel("价格")
         self.ax1.set_title(f"{self.ticker}")
 
-    # def parse_json_data_to_pandas(self, json_obj: dict) -> (list, list):
-    #     """
-    #     {
-    #         "Meta Data": {
-    #             "1. Information": "Intraday (1min) open, high, low, close prices and volume",
-    #             "2. Symbol": "tsla", "3. Last Refreshed": "2020-04-09 16:00:00",
-    #             "4. Interval": "1min", "5. Output Size": "Compact", "6. Time Zone": "US/Eastern"
-    #         },
-    #         "Time Series (1min)": {
-    #             "2020-04-09 16:00:00": {"1. open": "571.9250", "2. high": "573.0100", "3. low": "571.7300", "4. close": "573.0100", "5. volume": "117287"},
-    #             "2020-04-09 15:59:00": {"1. open": "572.0000", "2. high": "572.0000", "3. low": "571.4500", "4. close": "572.0000", "5. volume": "56954"},
-    #             "2020-04-09 15:58:00": {"1. open": "571.4500", "2. high": "572.0000", "3. low": ...
-    #             }
-    #         }, ...
-    #     }
-    #     """
-    #     time_prices_dict = json_obj["Time Series (1min)"]
-    #     dict_list = []
-    #     for dt in time_prices_dict.keys():
-    #         time_prices_dict[dt]['timestamp'] = dt
-    #         dict_list.append(time_prices_dict[dt])
-    #     return pandas.DataFrame.from_dict(dict_list)
-
-    # def get_market_plot_figure(self):
-    #     data_file_path = self.get_ticker_file_path()
-    #     json_data = excalibur.file_utility.read_gzip_file_as_json_obj(data_file_path)
-
-    #     fig = plt.figure(figsize=(10, 10))
-
-    #     # ax.xaxis.set_major_locator(matplotlib.dates.YearLocator())
-    #     # ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%Y'))
-    #     # plt.locator_params(nbins=4)
-    #     df = self.parse_json_data_to_pandas(json_data)
-    #     import ipdb
-    #     ipdb.set_trace()
-    #     plt.plot(df['timestamp'], df['4. close'])
-    #     # plt.yticks(np.arange(min(df['4. close']), max(df['4. close']) + 1, 1.0))
-    #     plt.xlabel("date")
-    #     plt.ylabel("price")
-    #     plt.title(f"{self.ticker} Stock Price")
-    #     return fig
-
     def run(self):
         ani = animation.FuncAnimation(self.fig, self.animate, interval=1000)
         # self.get_market_plot_figure()
         plt.show()
+
+
+def plot_ticker(ticker):
+    drawer = Plotter(ticker)
+    drawer.run()
+
+
+def plot_tickers(tickers):
+    # Process will create a process waiting to run
+    procs = []
+    for tick in tickers:
+        p = multiprocessing.Process(target=plot_ticker, args=(tick,))
+        p.start()
+        procs.append(p)
+
+    # wait for process to end
+    for p in procs:
+        p.join()

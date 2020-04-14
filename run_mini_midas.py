@@ -19,10 +19,11 @@ else:
 if ACTION_TYPE.lower() == "get_historical_data":
     mini_midas.stock_utilities.secure_ticker_prices(TICKER_LIST)
 elif ACTION_TYPE.lower() == "plot":
-    for tic in TICKER_LIST:
-        mini_midas.plot.Plotter(tic).run()
-        # TODO: try to plot all tickers
-        break
+    mini_midas.plot.plot_tickers(TICKER_LIST)
+    # for tic in TICKER_LIST:
+    #     mini_midas.plot.Plotter(tic).run()
+    #     # TODO: try to plot all tickers
+    #     break
 
 elif ACTION_TYPE.lower() == "get_intraday_data":
     mini_midas.stock_utilities.start_monitoring_tickers(TICKER_LIST)
