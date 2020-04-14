@@ -404,6 +404,7 @@ def start_monitoring_tickers(tickers):
     procs = []
     for tick in tickers:
         p = multiprocessing.Process(target=monit_ticker, args=(tick,))
+        time.sleep(1)
         p.start()
         procs.append(p)
 

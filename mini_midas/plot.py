@@ -6,6 +6,7 @@ from matplotlib import ticker
 import mini_midas
 import datetime
 import excalibur
+import time
 
 
 LOG_INSTANCE = excalibur.logger.getlogger_debug()
@@ -105,6 +106,7 @@ def plot_tickers(tickers):
     for tick in tickers:
         p = multiprocessing.Process(target=plot_ticker, args=(tick,))
         p.start()
+        time.sleep(1)
         procs.append(p)
 
     # wait for process to end
