@@ -89,7 +89,7 @@ class Plotter:
         self.ax1.set_title(f"{self.ticker}")
 
     def run(self):
-        ani = animation.FuncAnimation(self.fig, self.animate, interval=1000)
+        ani = animation.FuncAnimation(self.fig, self.animate, interval=20000)
         # self.get_market_plot_figure()
         plt.show()
 
