@@ -21,6 +21,7 @@ import datetime
 import json
 import time
 import requests
+import multiprocessing
 import excalibur
 import mini_midas
 
@@ -382,6 +383,33 @@ def secure_ticker_prices(ticker_list):
         counter += 1
         if counter % 5 == 0:
             time.sleep(61)
+
+
+def monit_ticker(tic):
+    while True:
+        try:
+            alpha = mini_midas.stock_utilities.AlphaVantageTickerIntraPriceRetriever(tic)
+            alpha.run()
+        except Exception as e:
+            LOG_INSTANCE.critical("%s monitoring process was terminated, error: %s", tic, str(e))
+
+        time.sleep(1)
+
+
+def start_monitoring_tickers(tickers):
+    # multiprocessing
+    print("Number of cpu : ", multiprocessing.cpu_count())
+
+    # Process will create a process waiting to run
+    procs = []
+    for tick in tickers:
+        p = multiprocessing.Process(target=monit_ticker, args=(tick,))
+        p.start()
+        procs.append(p)
+
+    # wait for process to end
+    for p in procs:
+        p.join()
 
 
 if __name__ == '__main__':

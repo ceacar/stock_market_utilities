@@ -25,9 +25,10 @@ elif ACTION_TYPE.lower() == "plot":
         break
 
 elif ACTION_TYPE.lower() == "get_intraday_data":
-    for tic in TICKER_LIST:
-        alpha = mini_midas.stock_utilities.AlphaVantageTickerIntraPriceRetriever(tic)
-        alpha.run()
-        break
+    mini_midas.stock_utilities.start_monitoring_tickers(TICKER_LIST)
+    # for tic in TICKER_LIST:
+    #     alpha = mini_midas.stock_utilities.AlphaVantageTickerIntraPriceRetriever(tic)
+    #     alpha.run()
+    #     break
 else:
     print(f"ACTION_TYPE not correct {ACTION_TYPE}, not doing anything")
