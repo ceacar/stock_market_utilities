@@ -72,6 +72,7 @@ class Plotter:
 
     # TODO: now expand this to multiple
     def animate(self, interval):
+
         data_file_path_list = mini_midas.common.get_all_file_saved_path(self.ticker)
         ticker_data = {}
         for file_path in data_file_path_list:

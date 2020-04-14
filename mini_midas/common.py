@@ -62,7 +62,7 @@ def get_historical_data_storage_path():
     return f"{DATA_STORAGE_PATH}/historical/{today}"
 
 
-def get_file_saved_path(self):
+def get_file_saved_path(ticker):
     """
     returns file save path,
     it will switch between historical data and intraday data based on the current time.
@@ -73,10 +73,10 @@ def get_file_saved_path(self):
 
     if is_market_closed():
         # we need to give a full name and save it to full day path
-        save_path = f"{get_historical_data_storage_path()}/{self.ticker}.{date_str}.json.gzip"
+        save_path = f"{get_historical_data_storage_path()}/{ticker}.{date_str}.json.gzip"
     else:
         # we save it to intraday
-        save_path = f"{get_intraday_data_storage_path()}/{self.ticker}.{date_str},{hour}.json.gzip"
+        save_path = f"{get_intraday_data_storage_path()}/{ticker}.{date_str},{hour}.json.gzip"
 
     return save_path
 
@@ -101,7 +101,7 @@ def get_all_file_saved_path(ticker):
     return save_path
 
 
-def is_market_holiday(cls):
+def is_market_holiday():
     """
     returns if this is market holiday
     """

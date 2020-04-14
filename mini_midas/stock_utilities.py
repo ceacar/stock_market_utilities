@@ -107,7 +107,7 @@ class AlphaVantageTickerIntraPriceRetriever:
         1. try to read from file
         2. if file not exist, read from endpoint
         """
-        file_path = self.get_file_saved_path()
+        file_path = mini_midas.common.get_file_saved_path(self.ticker)
 
         if excalibur.file_utility.does_gzip_file_exist_and_not_empty(file_path):
             ticker_data = excalibur.file_utility.read_gzip_file_as_json_obj(file_path)
@@ -130,24 +130,6 @@ class AlphaVantageTickerIntraPriceRetriever:
     #     last_price_datetime = data_json['3. Last Refreshed']
     #     date_str, hour = self.split_date_string()
     #     return ticker_name, last_price_datetime, date_str, hour
-
-    def get_file_saved_path(self):
-        """
-        returns file save path,
-        it will switch between historical data and intraday data based on the current time.
-        when market is open, it will return intraday data path,
-        when market is closed, it will return historical data path
-        """
-        date_str, hour = mini_midas.common.split_date_string()
-
-        if mini_midas.common.is_market_closed():
-            # we need to give a full name and save it to full day path
-            save_path = f"{self.historical_data_storage_path}/{self.ticker}.{date_str}.json.gzip"
-        else:
-            # we save it to intraday
-            save_path = f"{self.intraday_data_storage_path}/{self.ticker}.{date_str},{hour}.json.gzip"
-
-        return save_path
 
     @classmethod
     def get_ticker_name_from_data(cls, data_json: dict) -> str:
@@ -172,7 +154,7 @@ class AlphaVantageTickerIntraPriceRetriever:
         if self.ticker != data_ticker_name:
             raise Exception(f"Error saving data, ticker_name to save: {self.ticker}, data_ticker_name in data:{data_ticker_name}")
 
-        data_path = self.get_file_saved_path()
+        data_path = mini_midas.common.get_file_saved_path(self.ticker)
         excalibur.file_utility.remove_gzip_file_if_empty(data_path)
         excalibur.file_utility.write_to_gzip(data_path, [json.dumps(data_json)])
 
@@ -197,7 +179,7 @@ class AlphaVantageTickerIntraPriceRetriever:
     def save_current_cached_data(self):
         if not self.cache:
             raise Exception("Cache doesn't have any data")
-        data_path = self.get_file_saved_path()
+        data_path = mini_midas.common.get_file_saved_path(self.ticker)
         excalibur.file_utility.write_to_gzip(data_path, [json.dumps(self.cache)])
 
     def reset_cache(self):
@@ -313,7 +295,7 @@ class AlphaVantageTickerIntraPriceRetriever:
     def sleep_if_market_not_available(self):
         while mini_midas.common.is_market_not_available():
             LOG_INSTANCE.debug('Market Closed,sleeping....Zzzz...')
-            time.sleep(60)
+            time.sleep(65)
             continue
 
         LOG_INSTANCE.info("Market is Open")
@@ -355,7 +337,7 @@ class AlphaVantageTickerIntraPriceRetriever:
             # if market is closed or is weekend, or is market holidays, we will just keep sleeping
             if mini_midas.common.is_market_not_available():
                 LOG_INSTANCE.debug('Market Closed,sleeping....Zzzz...')
-                time.sleep(60)
+                time.sleep(65)
                 continue
 
             ticker_minute_data = self.get_ticker_price()
@@ -368,7 +350,7 @@ class AlphaVantageTickerIntraPriceRetriever:
                 self.save_current_cached_data()
                 self.clear_intraday_prices()
             # sleep 1 minute before retry
-            time.sleep(60)
+            time.sleep(65)
 
 
 def secure_ticker_prices(ticker_list):
@@ -404,8 +386,8 @@ def start_monitoring_tickers(tickers):
     procs = []
     for tick in tickers:
         p = multiprocessing.Process(target=monit_ticker, args=(tick,))
-        time.sleep(1)
         p.start()
+        time.sleep(1)
         procs.append(p)
 
     # wait for process to end
